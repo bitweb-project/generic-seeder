@@ -40,19 +40,18 @@ class CloudflareSeeder(object):
 
         logger.debug("Creating CloudflareSeeder interface from configuration.")
 
-        user = configuration['cf_username'].replace('"', '')
         key = configuration['cf_api_key'].replace('"', '')
         domain = configuration['cf_domain'].replace('"', '')
         name = configuration['cf_domain_prefix'].replace('"', '')
 
-        return CloudflareSeeder(user, key, domain, name)
+        return CloudflareSeeder(key, domain, name)
 
-    def __init__(self, user, key, domain, name):
+    def __init__(self, key, domain, name):
 
         """ Constructor: set the member variables. """
 
-        logger.debug("CloudflareSeeder creation for user: {} domain: {} name: {}".format(user, domain, name))
-        self.cf = CloudFlare.CloudFlare(email=user, token=key)
+        logger.debug("CloudflareSeeder creation for domain: {} name: {}".format(domain, name))
+        self.cf = CloudFlare.CloudFlare(token=key)
         self.domain = domain
         self.name = name
         self._zone_id = None
