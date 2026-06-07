@@ -19,6 +19,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Only define strlcpy/strlcat if the system doesn't already provide them.
+ * glibc >= 2.38 (Ubuntu 24.04+) exposes these via <string.h>, so we guard
+ * against the redeclaration conflict. */
+#if !defined(__GLIBC__) || (__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 38)
+
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters
  * will be copied.  Always NUL terminates (unless siz == 0).
@@ -87,4 +92,6 @@ inline size_t strlcat(char *dst, const char *src, size_t siz)
 
     return(dlen + (s - src)); /* count does not include NUL */
 }
+
+#endif /* glibc version guard */
 #endif

@@ -46,7 +46,7 @@ Detailed set up instructions can be found in the [DNS Seeder Setup Guide](/SETUP
 ### Step 1 - Install Prerequisites
 
 ```
-sudo apt-get install git build-essential libboost-all-dev libssl-dev libcurl4-openssl-dev libconfig++-dev
+sudo apt-get install git build-essential libboost-all-dev libssl-dev libcurl4-openssl-dev libconfig++-dev libssl-dev libcurl4-openssl-dev libconfig++-dev
 ```
 
 ### Step 2 - Download Source Code
