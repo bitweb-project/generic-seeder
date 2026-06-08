@@ -52,7 +52,7 @@ sudo apt-get install git build-essential libboost-all-dev libssl-dev libcurl4-op
 ### Step 2 - Download Source Code
 
 ```
-git clone https://github.com/team-exor/generic-seeder.git
+git clone https://github.com/bitweb-project/generic-seeder.git
 ```
 
 ### Step 3 - Navigate to Source Directory
@@ -69,7 +69,7 @@ cp ./settings.conf.template ./settings.conf
 
 *Make required changes in settings.conf*
 
-**NOTE:** Example setting files for the bitcoin, dogecoin and exor networks are also provided. Copy or rename `settings.conf.bitcoin`, `settings.conf.dogecoin` or `settings.conf.exor` to `settings.conf` and test crawling any of these networks with working examples to better understand how to set up the config for your own network.
+**NOTE:** Example setting files for the bitcoin, dogecoin, exor and bitweb networks are also provided. Copy or rename `settings.conf.bitcoin`, `settings.conf.dogecoin`, `settings.conf.exor` or `settings.conf.bitweb` to `settings.conf` and test crawling any of these networks with working examples to better understand how to set up the config for your own network.
 
 ### Step 5 - Build from Source
 
@@ -167,22 +167,30 @@ After adding the new iptables rule, the seeder app can be called without `sudo`,
 
 ### Cloudflare API Mode
 
-Instead of using the DNS seeder app to run your own DNS server, you can alternatively utilize a free [Cloudflare](https://www.cloudflare.com/) account to host the list of good nodes from your blockchain network. Extra setup is required before Cloudflare mode will work properly. Python 3+ and the Cloudflare Python API must be installed. Run the following cmds in the terminal, one line at a time:
+Instead of using the DNS seeder app to run your own DNS server, you can alternatively utilize a free [Cloudflare](https://www.cloudflare.com/) account to host the list of good nodes from your blockchain network. Extra setup is required before Cloudflare mode will work properly.
+
+Install system dependencies:
 
 ```
-sudo apt-get install python3 python3-pip
-sudo pip3 install cloudflare
+sudo apt-get install python3 python3-pip python3-venv
 ```
 
-You must also fill in the Cloudflare API config section at the bottom of the `settings.conf` file.
+Create a virtual environment and install the Cloudflare library inside it. **Do not use `sudo pip3 install cloudflare` globally** — Ubuntu 24+ blocks this, and the system package may be an incompatible older version:
+
+```
+cd /path/to/generic-seeder
+python3 -m venv cf-venv
+cf-venv/bin/pip install cloudflare
+```
+
+You must also fill in the Cloudflare API config section at the bottom of the `settings.conf` file. `cf_api_key` is a Cloudflare **API Token** (not the Global API Key) — create one at Cloudflare dashboard → your domain → Overview → Get your API token → Create Token → "Edit zone DNS" template.
 
 **Example:**
 
 ```
-cf_domain="example.com"
-cf_domain_prefix="dnsseed"
-cf_username="your_cloudflare_username"
-cf_api_key="your_cloudflare_api_key"
+cf_domain="bitwebcore.net"
+cf_domain_prefix="seed3"
+cf_api_key="your_cloudflare_api_token"
 cf_seed_dump="dnsseed.dump"
 ```
 
@@ -192,16 +200,16 @@ Run the seeder without the need to specify any additional options:
 ./dnsseed
 ```
 
-Let the seeder app run for a few minutes until a `dnsseed.dump` file is generated, and then you can test Cloudflare mode:
+Let the seeder app run for a few minutes until a `dnsseed.dump` file is generated (takes ~100 seconds on first start), and then you can test Cloudflare mode:
 
 ```
-cd /path/to/seeder/cf-uploader && python3 seeder.py
+cd /path/to/generic-seeder/cf-uploader && /path/to/generic-seeder/cf-venv/bin/python3 seeder.py
 ```
 
 Assuming no errors were reported, you can check that your seeder domain is working properly by running the following cmd in the format `nslookup {cf_domain_prefix}.{cf_domain}`:
 
 ```
-nslookup dnsseed.example.com
+nslookup seed3.bitwebcore.net
 ```
 
 If everything is working correctly, you will see a number of "Name:" and "Address:" lines near the end of the output:
@@ -213,26 +221,26 @@ Server:         2001:19f1:300:1702::3
 Address:        2001:19f1:300:1702::3#53
 
 Non-authoritative answer:
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 158.203.13.138
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 44.76.38.113
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 46.76.253.117
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 145.248.52.149
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 82.240.23.104
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 103.207.140.36
-Name:   dnsseed.example.com
+Name:   seed3.bitwebcore.net
 Address: 204.222.30.68
 ```
 
-Once configured correctly, it is recommended to set up a cron job that will automatically update the seeds list every 30 minutes or so:
+Once configured correctly, it is recommended to set up a cron job that will automatically update the seeds list every 30 minutes or so. Always use the venv Python binary, not the system `python3`:
 
 ```
-*/30 * * * * cd /path/to/seeder/cf-uploader && python3 seeder.py
+*/30 * * * * cd /path/to/generic-seeder/cf-uploader && /path/to/generic-seeder/cf-venv/bin/python3 seeder.py >> /path/to/generic-seeder/cf-uploader/seeder.log 2>&1
 ```
 
 ## Command-Line Options

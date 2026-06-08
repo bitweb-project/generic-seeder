@@ -105,13 +105,26 @@ This section must be completed on a computer running the Linux operating system.
    `sudo apt-get install build-essential libboost-all-dev libssl-dev libcurl4-openssl-dev libconfig++-dev`
    
 2. **ONLY COMPLETE THIS STEP IF YOU ARE SETTING UP THE SEEDER FOR USE WITH CLOUDFLARE, OTHERWISE YOU MAY SKIP THIS STEP.**<br /><br />
-   Extra setup is required before CloudFlare mode will work properly. Python 3+ and the Cloudflare Python API must be installed. Run the following cmds in the terminal, one line at a time:
+   Extra setup is required before Cloudflare mode will work properly. Python 3.3+ and the Cloudflare Python API must be installed in a virtual environment. Run the following cmds in the terminal, one line at a time:
 
 ```
-sudo apt-get install python3 python3-pip
-sudo pip3 install cloudflare
-```   
-   
+sudo apt-get install python3 python3-pip python3-venv
+```
+
+   The `cloudflare` Python library must be installed inside a virtual environment (venv). **Do not use `sudo pip3 install cloudflare` globally** — Ubuntu 24+ blocks this, and mixing system/global packages causes version conflicts. After cloning the repo in step 3 below, run:
+
+```
+cd generic-seeder
+python3 -m venv cf-venv
+cf-venv/bin/pip install cloudflare
+```
+
+   Verify it installed correctly:
+
+```
+cf-venv/bin/python3 -c "import cloudflare; print('OK')"
+```
+
 3. Download the latest copy of the generic DNS seeder app by running the following cmd in the terminal:
 
    `git clone https://github.com/team-exor/generic-seeder.git`
@@ -151,11 +164,10 @@ sudo pip3 install cloudflare
 - **seed_8 (Optional):** The 8th hardcoded ip address or domain to connect to. This is optional because only one seed node address is required to gain access to the whole blockchain.
 - **seed_9 (Optional):** The 9th hardcoded ip address or domain to connect to. This is optional because only one seed node address is required to gain access to the whole blockchain.
 - **seed_10 (Optional):** The 10th hardcoded ip address or domain to connect to. This is optional because only one seed node address is required to gain access to the whole blockchain.
-- **cf_domain (Optional):** The domain name that you want to configure for use with Cloudflare and the DNS seeder app. **Ex:** example.com. This value is only required if you followed the [Cloudflare Setup](#cloudflare-setup).
-- **cf_domain_prefix (Optional):** The domain name prefix for the NS record that is configured for use with Cloudflare and the DNS seeder app. **Ex:** dnsseed. This value is only required if you followed the [Cloudflare Setup](#cloudflare-setup).
-- **cf_username (Optional):** The username (usually an email address) for the Cloudflare account that is configured for use with the DNS seeder app. **Ex:** email@example.com. This value is only required if you followed the [Cloudflare Setup](#cloudflare-setup).
-- **cf_api_key (Optional):** The API key for the Cloudflare account that is configured for use with the DNS seeder app. You can find this value by logging into your Cloudflare account, clicking on the domain you have configured for the DNS seeder, ensure you are on the Overview tab and scroll down to find and click on a link called "Get your API token". Open the "API Tokens" tab, then click the "View" button next to the "Global API Key" and enter your password to gain access to your API key. **Ex:** 4f387a3b17d9efde484951fb372dbcb2. This value is only required if you followed the [Cloudflare Setup](#cloudflare-setup).
-- **cf_seed_dump (Optional):** The name of the dump file with the list of "good" nodes that the Cloudflare script should look for. For now, this should always be set to `dnsseed.dump`, but may need to be changed in the future for more advanced setups. This value is only required if you followed the [Cloudflare Setup](#cloudflare-setup).
+- **cf_domain (Optional):** The top-level domain name configured in Cloudflare. **Ex:** `bitwebcore.net`. Required if you followed the [Cloudflare Setup](#cloudflare-setup).
+- **cf_domain_prefix (Optional):** The subdomain prefix for DNS records managed by the seeder. **Ex:** `seed3` will create records under `seed3.bitwebcore.net`. Required if you followed the [Cloudflare Setup](#cloudflare-setup).
+- **cf_api_key (Optional):** A Cloudflare **API Token** (not the Global API Key) with permission to edit DNS records for your zone. To create one: log into Cloudflare → click your domain → **Overview** → scroll down to **API** → click **Get your API token** → **Create Token** → use the **"Edit zone DNS"** template → scope it to your domain → click **Create Token** and copy the result. **Ex:** `abc123xyz_your_token_here`. Required if you followed the [Cloudflare Setup](#cloudflare-setup).
+- **cf_seed_dump (Optional):** The name of the dump file with the list of "good" nodes that the Cloudflare script should look for. Always set to `dnsseed.dump`. Required if you followed the [Cloudflare Setup](#cloudflare-setup).
 
 8. Compile the DNS seeder app by running the following cmd in the terminal:
 
@@ -210,15 +222,18 @@ sudo systemctl stop systemd-resolved
 <hr />
 
 10. **ONLY COMPLETE THIS STEP IF YOU ARE SETTING UP THE SEEDER FOR USE WITH CLOUDFLARE, OTHERWISE YOU MAY SKIP THIS STEP.**<br /><br />
-   An extra step is required for taking the "good" list of nodes from the DNS seeder app and sending it to Cloudflare. To do this manually you can run the following cmd in the terminal:<br /><br />
-   `cd /path/to/seeder/cf-uploader && python3 seeder.py`<br /><br />
-   Change `/path/to/seeder/` so that it matches the location of where you installed the DNS Seeder app. After running this cmd, if everything went well and is working, you should be able to immediately run the following cmd in a terminal window and see results (Be sure to change `dnsseed.example.com` to your fully qualified NS record):<br /><br />
-   `nslookup dnsseed.example.com`<br /><br />
-   The IP addresses that are returned from the `nslookup` cmd are coming from your `dnsseed.dump` file, so you can always double-check by cross-referencing some of the IP addresses in both places.<br /><br />
-   Once you are sure that everything is working, it is recommended to set up a cron job that will automatically update the seeds list every 30 minutes or so by running the following cmd in a terminal:<br /><br />
+   An extra step is required for taking the "good" list of nodes from the DNS seeder app and sending it to Cloudflare. To do this manually you can run the following cmd in the terminal (replace `/path/to/seeder/` with the actual path where you cloned the repo):<br /><br />
+   `cd /path/to/seeder/cf-uploader && /path/to/seeder/cf-venv/bin/python3 seeder.py`<br /><br />
+   **Important:** always use the venv Python binary (`cf-venv/bin/python3`), not the system `python3`. The system Python has the old cloudflare v2 package which is incompatible with the current code.<br /><br />
+   After running this cmd, if everything went well you should be able to run the following cmd and see results (replace `seed3.bitwebcore.net` with your fully qualified NS record):<br /><br />
+   `nslookup seed3.bitwebcore.net`<br /><br />
+   The IP addresses returned are coming from your `dnsseed.dump` file. You can cross-reference them there.<br /><br />
+   Once you are sure that everything is working, set up a cron job to automatically update the seeds list every 30 minutes:<br /><br />
    `crontab -e`<br /><br />
-   Then add this line to the bottom of the crontab file that opens up (Be sure to change the `/path/to/seeder/` part so it matches the location of where you installed the DNS Seeder app):<br /><br />
-   `*/30 * * * * cd /path/to/seeder/cf-uploader && python3 seeder.py`
+   Then add this line to the crontab (replace `/path/to/seeder/` with your actual path):<br /><br />
+   `*/30 * * * * cd /path/to/seeder/cf-uploader && /path/to/seeder/cf-venv/bin/python3 seeder.py >> /path/to/seeder/cf-uploader/seeder.log 2>&1`<br /><br />
+   Check the log after the first run:<br /><br />
+   `tail -f /path/to/seeder/cf-uploader/seeder.log`
 
 11. **ONLY COMPLETE THIS STEP IF YOU ARE SETTING UP THE SEEDER USING THE [LOCAL DNS SERVER SETUP](#local-dns-server-setup) METHOD AND DO NOT WANT TO ALWAYS HAVE TO RUN THE SEEDER APP AS THE ROOT USER, OTHERWISE YOU MAY SKIP THIS STEP.**<br /><br />
    Because non-root users cannot access ports below 1024, an extra step is required to allow you to run the DNS server (which must always use port 53) without root privileges. There are two known workaround methods that both require a one-time command be executed as root:
@@ -245,3 +260,92 @@ sudo systemctl stop systemd-resolved
 ![](images/whatismydns-Example.jpg)
 
 - If using Ubuntu and you aren't able to get the local DNS server method to return any "good" IP addresses via nslookup, try restarting the seeder and additionally supplying the `-a <ip address>` argument to force the seeder to bind to a specific IP address. Read more: [Special Instructions for Ubuntu Users](#exclamation-special-instructions-for-ubuntu-users-exclamation)
+
+---
+
+## Bitweb Core Example
+
+Below is a complete working example for **Bitweb Core** (`bitwebcore.net`), using the Cloudflare method with `seed3.bitwebcore.net` as the NS record. All values are taken from the Bitweb Core source — `src/node/protocol_version.h` for protocol versions and `src/chainparams.cpp` for magic bytes and port.
+
+### settings.conf (Bitweb Core)
+
+```
+protocol_version="70016"
+init_proto_version="209"
+min_peer_proto_version="31800"
+caddr_time_version="31402"
+pchMessageStart_0 = "0xfe"
+pchMessageStart_1 = "0xae"
+pchMessageStart_2 = "0xd5"
+pchMessageStart_3 = "0xca"
+wallet_port="26333"
+explorer_url="https://explorer.bitwebcore.net/api/getblockcount"
+second_explorer_url=""
+explorer_requery_seconds="60"
+block_count="60000"
+seed_1="127.0.0.1"
+seed_2="173.212.243.200"
+seed_3="185.32.162.191"
+seed_4="seed1.bitwebcore.net"
+seed_5="seed2.bitwebcore.net"
+seed_6="seed3.bitwebcore.net"
+seed_7=""
+seed_8=""
+seed_9=""
+seed_10=""
+cf_domain="bitwebcore.net"
+cf_domain_prefix="seed3"
+cf_api_key="YOUR_API_TOKEN_HERE"
+cf_seed_dump="dnsseed.dump"
+```
+
+### Value sources
+
+| Parameter | Value | Source |
+|-----------|-------|--------|
+| `protocol_version` | `70016` | `src/node/protocol_version.h` → `PROTOCOL_VERSION` |
+| `init_proto_version` | `209` | `src/node/protocol_version.h` → `INIT_PROTO_VERSION` |
+| `min_peer_proto_version` | `31800` | `src/node/protocol_version.h` → `MIN_PEER_PROTO_VERSION` |
+| `caddr_time_version` | `31402` | not used |
+| `pchMessageStart_0..3` | `0xfe 0xae 0xd5 0xca` | `src/chainparams.cpp` → `pchMessageStart[0..3]` |
+| `wallet_port` | `26333` | `src/chainparams.cpp` → `nDefaultPort` |
+
+### Running with Cloudflare (Bitweb Core)
+
+1. Start the seeder in the background (no DNS server needed, Cloudflare handles DNS):
+
+```
+cd /opt/generic-seeder
+./dnsseed
+```
+
+2. Wait for the first `dnsseed.dump` to be written (takes ~100 seconds after first start):
+
+```
+watch -n5 wc -l dnsseed.dump
+```
+
+3. Push seeds to Cloudflare manually to verify:
+
+```
+cd /opt/generic-seeder/cf-uploader
+/opt/generic-seeder/cf-venv/bin/python3 seeder.py
+```
+
+4. Set up the cron job (replace path if different):
+
+```
+crontab -e
+```
+
+Add:
+
+```
+*/30 * * * * cd /opt/generic-seeder/cf-uploader && /opt/generic-seeder/cf-venv/bin/python3 seeder.py >> /opt/generic-seeder/cf-uploader/seeder.log 2>&1
+```
+
+5. Verify DNS records are live:
+
+```
+nslookup seed3.bitwebcore.net
+```

@@ -1,11 +1,24 @@
 """ Simple config reading. """
 
 import os
+import re
 import logging
 import configparser
-import io
 
 logger = logging.getLogger(__name__)
+
+
+def _strip_libconfig_comment(line):
+    """Strip libconfig-style // inline comments that follow a closing quote.
+
+    libconfig treats // as a line comment; Python configparser does not.
+    This handles patterns like:
+        key="value"   // some comment     -> key="value"
+        key="https://example.com"         -> key="https://example.com"  (unchanged)
+    The regex anchors on a closing double-quote followed by whitespace+//,
+    so // inside a quoted string (e.g. URLs) is never touched.
+    """
+    return re.sub(r'"\s*//.*$', '"', line)
 
 
 def get_conf_file_contents():
@@ -15,10 +28,11 @@ def get_conf_file_contents():
     conf_file = '../settings.conf'
     if os.path.exists(conf_file):
         logger.info("Found conf file {}".format(conf_file))
-        file_content = ''
+        lines = ['[general]']
         with open(conf_file, 'r') as f:
-            file_content = '[general]\n' + f.read()
-        return file_content
+            for line in f:
+                lines.append(_strip_libconfig_comment(line.rstrip('\n')))
+        return '\n'.join(lines)
 
     return None
 
