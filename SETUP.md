@@ -127,7 +127,7 @@ cf-venv/bin/python3 -c "import cloudflare; print('OK')"
 
 3. Download the latest copy of the generic DNS seeder app by running the following cmd in the terminal:
 
-   `git clone https://github.com/team-exor/generic-seeder.git`
+   `git clone https://github.com/bitweb-project/generic-seeder.git`
 4. Navigate to the newly downloaded DNS seeder app directory by running the following cmd in the terminal:
 
    `cd generic-seeder`
