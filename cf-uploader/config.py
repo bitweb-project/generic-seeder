@@ -47,5 +47,5 @@ def read_config_section(config, section):
 
 def read_local_config():
     config_parser = configparser.RawConfigParser()
-    config_parser.readfp(io.StringIO(get_conf_file_contents()))
+    config_parser.read_string(get_conf_file_contents())  # readfp() removed in Python 3.12
     return read_config_section(config_parser, "general")
